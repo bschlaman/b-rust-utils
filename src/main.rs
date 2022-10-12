@@ -1,5 +1,5 @@
-use env_logger::Env;
-use log::{info, warn};
+use log::{error, info, warn, LevelFilter};
+use simple_logger::SimpleLogger;
 use std::env;
 use std::io::Read;
 use std::mem;
@@ -20,12 +20,17 @@ fn perform_get_request(url: &String) -> Result<ResponseData, reqwest::Error> {
 }
 
 fn main() {
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    SimpleLogger::new().with_level(LevelFilter::Debug).init().unwrap();
 
     info!("starting script!");
     warn!("I suck at rust!");
 
     let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        error!("too few args bro");
+        panic!();
+    }
+
     let filename = &args[0];
     let url = &args[1];
 
@@ -37,4 +42,5 @@ fn main() {
         "{}, {}",
         res_data.http_status_code, res_data.body_size_bytes
     );
+
 }
