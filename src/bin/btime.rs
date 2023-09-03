@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local, Utc};
 use colored::Colorize;
-use prettytable::{row, Attr, Cell, Row, Table};
+use prettytable::{format, row, Attr, Cell, Row, Table};
 
 trait DateTimeFormatter {
     fn to_string_(&self) -> String;
@@ -35,94 +35,90 @@ where
     }
 }
 
-fn also_ptable() {
+fn print_datetime_table() {
     let utc = Utc::now();
     // don't call Local::now() so that a single time snapshot is used
     let local = utc.with_timezone(&Local);
 
     let mut table = Table::new();
+    table.set_format(*format::consts::FORMAT_BORDERS_ONLY);
 
-    table.add_row(Row::new(vec![
-        Cell::new("Description").with_style(Attr::Bold),
-        Cell::new("Local")
-            .with_style(Attr::BackgroundColor(prettytable::color::RED))
+    table.set_titles(Row::new(vec![
+        Cell::new("Description")
+            .with_style(Attr::Bold)
             .with_style(Attr::Italic(true)),
+        Cell::new(""),
+        Cell::new("Local")
+            .with_style(Attr::Bold)
+            .with_style(Attr::ForegroundColor(prettytable::color::RED)),
         Cell::new("UTC")
             .with_style(Attr::Bold)
-            .with_style(Attr::ForegroundColor(prettytable::color::YELLOW)),
-        Cell::new("Length"),
+            .with_style(Attr::ForegroundColor(prettytable::color::BLUE)),
+        Cell::new("Length").with_style(Attr::Dim),
     ]));
 
     table.add_row(row![
-        "Package name",
+        "Package name".italic(),
+        "📦",
+        env!("CARGO_PKG_NAME").bold(),
         "",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_NAME").len(),
+        "",
     ]);
 
     table.add_row(row![
-        "Unix",
+        "Unix".italic(),
+        "⏰️",
+        utc.timestamp().to_string().yellow(),
         "",
-        utc.timestamp().to_string(),
-        env!("CARGO_PKG_NAME").len(),
+        utc.timestamp().to_string().len().to_string().dimmed(),
     ]);
 
+    table.add_empty_row();
+
+    /*
     table.add_row(row![
-        "Default",
+        "Default".italic(),
         local.to_string_(),
         utc.to_string_(),
         utc.to_string_().len(),
     ]);
+    */
 
     table.add_row(row![
-        "RFC 3339",
+        "Friendly Calendar".italic(),
+        "📅",
+        local.to_calendar(),
+        utc.to_calendar().dimmed(),
+        utc.to_calendar().len().to_string().dimmed(),
+    ]);
+
+    table.add_row(row![
+        "RFC 3339".italic(),
+        "⌛",
         local.to_rfc3339_secs(),
-        utc.to_rfc3339_secs(),
-        utc.to_rfc3339_secs().len(),
+        utc.to_rfc3339_secs().blue().dimmed(),
+        utc.to_rfc3339_secs().len().to_string().dimmed(),
     ]);
 
     table.add_row(row![
-        "ISO 8601",
+        "ISO 8601".italic(),
+        "📄",
         local.to_iso8601(),
-        utc.to_iso8601(),
-        utc.to_iso8601().len(),
+        utc.to_iso8601().dimmed(),
+        utc.to_iso8601().len().to_string().dimmed(),
     ]);
 
     table.add_row(row![
-        "ISO 8601 Date",
-        local.to_iso8601_dots(),
-        utc.to_iso8601_dots(),
-        utc.to_iso8601_dots().len(),
+        "ISO 8601 Date".italic(),
+        "💻",
+        local.to_iso8601_dots().yellow().bold(),
+        utc.to_iso8601_dots().dimmed(),
+        utc.to_iso8601_dots().len().to_string().dimmed(),
     ]);
 
     table.printstd();
 }
 
-fn print_dates_with_emojis() {
-    let utc = Utc::now();
-    let local = Local::now();
-
-    let unix = utc.timestamp();
-    let utc_iso_formatted = utc.to_rfc3339();
-
-    let utc_formatted = utc.format("%Y-%m-%d %H:%M");
-    let iso_date = utc.format("%Y.%m.%d");
-    let utc_friendly = utc.format("%a %b %e %H:%M %Z");
-    let local_formatted = local.format("%Y-%m-%d %H:%M");
-
-    let cargo_pkg_name = env!("CARGO_PKG_NAME");
-
-    println!("== {} ==", cargo_pkg_name.bold());
-    println!("{}", unix.to_string().yellow());
-    println!("{}", utc_iso_formatted.blue());
-    println!("{}", iso_date.to_string().bold());
-    println!("{}", "=".repeat(utc_iso_formatted.len()));
-    println!("⌛ {local_formatted:20} {}", "(Local)".dimmed());
-    println!("⌛ {utc_formatted:20} {}", "(UTC)".dimmed());
-    println!("📅 {utc_friendly:20} {}", "(UTC)".dimmed());
-}
-
 fn main() {
-    print_dates_with_emojis();
-    also_ptable()
+    print_datetime_table();
 }
