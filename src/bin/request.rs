@@ -1,11 +1,54 @@
 use colored::Colorize;
+use prettytable::{format, row, Attr, Cell, Row, Table};
 use simple_logger::SimpleLogger;
+use std::io::Read;
 
+#[derive(Debug)]
 struct ResponseData {
     http_status_code: u16,
     body_length: usize,
+    headers: reqwest::header::HeaderMap,
 }
 
+impl ResponseData {
+    fn to_table(&self) {
+        let mut table = Table::new();
+        table.set_format(*format::consts::FORMAT_BORDERS_ONLY);
+
+        table.set_titles(Row::new(vec![
+            Cell::new("Response attribute")
+                .with_style(Attr::Bold)
+                .with_style(Attr::Italic(true)),
+            Cell::new(""),
+            Cell::new("Value")
+                .with_style(Attr::Bold)
+                .with_style(Attr::ForegroundColor(prettytable::color::RED)),
+        ]));
+
+        table.add_row(row![
+            "http status code".italic(),
+            "🔢",
+            self.http_status_code,
+        ]);
+
+        table.add_row(row!["Body size".italic(), "💾", self.body_length,]);
+
+        table.add_empty_row();
+        table.add_row(row!["HTTP Headers".bold(), "➖"]);
+
+        for (key, val) in self.headers.iter() {
+            table.add_row(row![
+                key.to_string().italic().dimmed(),
+                "",
+                val.to_str().unwrap(),
+            ]);
+        }
+
+        table.printstd();
+    }
+}
+
+/*
 async fn perform_get_request_async(url: &String) -> Result<ResponseData, reqwest::Error> {
     let res = reqwest::get(url).await?;
     let http_status_code = res.status().as_u16();
@@ -16,7 +59,9 @@ async fn perform_get_request_async(url: &String) -> Result<ResponseData, reqwest
         body_length: body.len(),
     })
 }
+*/
 
+/*
 #[tokio::main]
 async fn main_async() {
     let url = "";
@@ -34,26 +79,46 @@ async fn main_async() {
         res_data.body_length.to_string().green(),
     );
 }
+*/
 
-fn main() {
-    setup();
+fn perform_get_request(url: &str) -> Result<ResponseData, Box<dyn std::error::Error>> {
+    let mut res = reqwest::blocking::get(url)?;
+
+    let headers = res.headers().clone();
+
+    let mut body = Vec::new();
+    res.read_to_end(&mut body)?;
+
+    Ok(ResponseData {
+        http_status_code: res.status().as_u16(),
+        body_length: body.len(),
+        headers,
+    })
 }
 
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    setup();
+
+    let url = std::env::args().nth(1).unwrap();
+    let res = perform_get_request(&url)?;
+    res.to_table();
+
+    Ok(())
+}
+
+/// Create the logger and print some debug information
 fn setup() {
     SimpleLogger::new()
         .with_level(log::LevelFilter::Debug)
         .init()
         .unwrap();
 
-    let args = std::env::args().collect::<Vec<String>>();
-    if args.len() != 2 {
-        log::error!("too few args");
-        std::process::exit(1);
-    }
+    // yes, I parse args again elsewhere.  sue me
+    let mut args = std::env::args();
 
-    let filename = &args[0];
-    let url = &args[1];
+    let path_of_executable = args.next().unwrap();
+    let arg1 = args.next().expect("Must supply exactly one arg: <url>");
 
-    log::info!("script: {}", filename.bold());
-    log::info!("url:    {}", url.bright_yellow());
+    log::debug!("path of executable: {}", path_of_executable.bold());
+    log::debug!("url:                {}", arg1.bright_yellow());
 }
