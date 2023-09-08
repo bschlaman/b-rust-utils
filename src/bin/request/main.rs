@@ -1,4 +1,6 @@
 mod mime;
+#[cfg(test)]
+mod tests;
 
 use colored::Colorize;
 use prettytable::{format, row, Attr, Cell, Row, Table};
@@ -92,11 +94,11 @@ fn perform_get_request(url: &str) -> Result<ResponseData, Box<dyn std::error::Er
     let headers = res.headers().clone();
 
     let mut body = Vec::new();
-    res.read_to_end(&mut body)?;
+    let num_bytes = res.read_to_end(&mut body)?;
 
     Ok(ResponseData {
         http_status_code: res.status().as_u16(),
-        body_length: body.len(),
+        body_length: num_bytes,
         headers,
     })
 }

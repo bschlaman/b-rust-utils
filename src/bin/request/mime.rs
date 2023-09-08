@@ -1,10 +1,11 @@
 use std::collections::HashMap;
+use strum_macros::{Display, EnumString};
 
 // this is not a complete list, but I don't expect
 // to encounter the other types.  If I do, I'll add them.
 // `MType` to indicate the "main" type.
-#[derive(Debug)]
-enum MType {
+#[derive(Debug, Display, PartialEq, EnumString)]
+pub(crate) enum MType {
     // discrete types
     Application,
     Text,
@@ -16,15 +17,15 @@ enum MType {
 }
 
 #[derive(Debug)]
-struct MimeType {
-    type_: MType,
-    subtype: String,
+pub(crate) struct MimeType {
+    pub(crate) type_: MType,
+    pub(crate) subtype: String,
 }
 
 #[derive(Debug)]
 pub(crate) struct ContentType {
-    media_type: MimeType,
-    parameters: HashMap<String, String>,
+    pub(crate) media_type: MimeType,
+    pub(crate) parameters: HashMap<String, String>,
 }
 
 impl ContentType {
