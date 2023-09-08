@@ -1,3 +1,5 @@
+mod mime;
+
 use colored::Colorize;
 use prettytable::{format, row, Attr, Cell, Row, Table};
 use simple_logger::SimpleLogger;
@@ -43,6 +45,9 @@ impl ResponseData {
                 val.to_str().unwrap(),
             ]);
         }
+        let content = "text/html; charset=utf-8";
+        let ct = mime::ContentType::from_header_value(content);
+        dbg!(ct.unwrap());
 
         table.printstd();
     }
@@ -99,8 +104,14 @@ fn perform_get_request(url: &str) -> Result<ResponseData, Box<dyn std::error::Er
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     setup();
 
+    let start_time = std::time::Instant::now();
+
     let url = std::env::args().nth(1).unwrap();
     let res = perform_get_request(&url)?;
+
+    let duration = start_time.elapsed().as_millis();
+    log::debug!("time elapsed (ms): {}", duration);
+
     res.to_table();
 
     Ok(())
