@@ -7,12 +7,18 @@ use strum_macros::{Display, EnumString};
 #[derive(Debug, Display, PartialEq, EnumString)]
 pub(crate) enum MType {
     // discrete types
+    #[strum(serialize = "application")]
     Application,
+    #[strum(serialize = "text")]
     Text,
+    #[strum(serialize = "image")]
     Image,
+    #[strum(serialize = "audio")]
     Audio,
+    #[strum(serialize = "video")]
     Video,
     // multipart types
+    #[strum(serialize = "multipart")]
     Multipart,
 }
 
@@ -30,9 +36,20 @@ pub(crate) struct ContentType {
 
 impl ContentType {
     pub(crate) fn from_header_value(content_type: &str) -> Result<Self, String> {
-        let parts = content_type.split(';').collect::<Vec<&str>>();
-        let media_type = parts[0].split('/').collect::<Vec<&str>>();
-        let type_ = match media_type[0] {
+        let mut parameters = std::collections::HashMap::new();
+
+        let mut parts = content_type.split(';').map(|s| s.trim());
+
+        let mut media_type = parts
+            .next()
+            .expect("media type should be the first directive before a ';'")
+            .split('/')
+            .map(|s| s.trim());
+
+        let type_ = match media_type
+            .next()
+            .expect("parsed media type to be a '/'-separated directive")
+        {
             "application" => MType::Application,
             "text" => MType::Text,
             "image" => MType::Image,
@@ -42,12 +59,18 @@ impl ContentType {
             t => return Err(format!("Unknown MIME type: {}", t)),
         };
 
+        for param in parts {
+            let mut param_parts = param.splitn(2, '=').map(|s| s.trim());
+            let (key, val) = (param_parts.next().unwrap(), param_parts.next().unwrap());
+            parameters.insert(key.to_string(), val.to_string());
+        }
+
         Ok(ContentType {
             media_type: MimeType {
                 type_,
-                subtype: String::from(""),
+                subtype: String::from(media_type.next().unwrap()),
             },
-            parameters: HashMap::new(),
+            parameters,
         })
     }
 }
