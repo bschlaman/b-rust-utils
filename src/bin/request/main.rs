@@ -15,7 +15,7 @@ struct ResponseData {
 }
 
 impl ResponseData {
-    fn to_table(&self) {
+    fn to_summary_table(&self) {
         let mut table = Table::new();
         table.set_format(*format::consts::FORMAT_BORDERS_ONLY);
 
@@ -40,6 +40,8 @@ impl ResponseData {
         table.add_empty_row();
         table.add_row(row!["HTTP Headers".bold(), "➖"]);
 
+        table.add_row(row!["Num headers", "", self.headers.len()]);
+
         for (key, val) in self.headers.iter() {
             table.add_row(row![
                 key.to_string().italic().dimmed(),
@@ -47,10 +49,42 @@ impl ResponseData {
                 val.to_str().unwrap(),
             ]);
         }
-        let content = "text/html; charset=utf-8";
-        let ct = mime::ContentType::from_header_value(content);
-        dbg!(ct.unwrap());
 
+        table.printstd();
+    }
+
+    fn to_content_type_table(&self) {
+        let content_type_header_val = self.headers.get("content-type").unwrap().to_str().unwrap();
+        let content_type_data =
+            mime::ContentType::from_header_value(content_type_header_val).unwrap();
+
+        let mut table = Table::new();
+        table.set_format(*format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
+
+        table.set_titles(Row::new(vec![
+            Cell::new("Directive")
+                .with_style(Attr::Bold)
+                .with_style(Attr::Italic(true)),
+            Cell::new("Value")
+                .with_style(Attr::Bold)
+                .with_style(Attr::ForegroundColor(prettytable::color::RED)),
+        ]));
+
+        table.add_row(row![
+            "type".italic(),
+            content_type_data.media_type.type_.to_string().bold()
+        ]);
+
+        table.add_row(row![
+            "subtype".italic(),
+            content_type_data.media_type.subtype.bold()
+        ]);
+
+        for (key, val) in content_type_data.parameters {
+            table.add_row(row![key, val.dimmed()]);
+        }
+
+        println!("content-type: {}", content_type_header_val.blue().italic());
         table.printstd();
     }
 }
@@ -114,7 +148,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let duration = start_time.elapsed().as_millis();
     log::debug!("time elapsed (ms): {}", duration);
 
-    res.to_table();
+    res.to_summary_table();
+    res.to_content_type_table();
 
     Ok(())
 }
