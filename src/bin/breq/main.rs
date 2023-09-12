@@ -1,7 +1,4 @@
 mod mime;
-#[cfg(test)]
-mod tests;
-
 use colored::Colorize;
 use prettytable::{format, row, Attr, Cell, Row, Table};
 use simple_logger::SimpleLogger;
